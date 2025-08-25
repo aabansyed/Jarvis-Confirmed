@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Jarvis</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" crossorigin="anonymous"/>
+
+<style>
+  :root{
+    --sidebar-w: 250px;
+    --pink:#ff4081;
+    --cy:#00e5ff;
+    --bg:#000;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Poppins',sans-serif;background:#000;color:#fff;height:100vh;display:flex;overflow:hidden}
+
+  /* Sidebar */
+  .sidebar{width:var(--sidebar-w);background:#111;padding:15px;display:flex;flex-direction:column;transition:transform .3s ease}
+  .sidebar h2{margin:0 0 12px}
+  .sidebar button{background:var(--pink);border:none;padding:8px 12px;color:#fff;border-radius:8px;cursor:pointer;margin-bottom:10px}
+  .sidebar input{padding:6px;border-radius:6px;border:none;margin-bottom:10px;background:#1b1b1b;color:#fff}
+  .chat-history{flex:1;overflow-y:auto}
+  .chat-item{padding:8px;border-radius:6px;cursor:pointer}
+  .chat-item:hover{background:#222}
+
+  /* Desktop: sidebar fixed */
+  @media (min-width: 769px){
+    .sidebar{transform:translateX(0)!important;position:relative}
+    .main{margin-left:var(--sidebar-w)}
+    #toggleSidebar{display:none}
+  }
+  /* Mobile: sidebar hidden by default */
+  @media (max-width:768px){
+    .sidebar.hidden{transform:translateX(-100%);position:absolute;height:100%;z-index:10}
+  }
+
+  /* Main */
+  .main{flex:1;position:relative;display:flex;flex-direction:column}
+  video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-1}
+  .header{display:flex;justify-content:space-between;align-items:center;padding:10px 20px}
+  .header p{font-size:1.5rem;font-weight:600}
+  .header .insta{background:var(--pink);border:none;padding:6px 14px;border-radius:6px;color:#fff;text-decoration:none}
+  .chat-box{flex:1;overflow-y:auto;padding:20px}
+  .message{margin-bottom:10px}
+  .message .timestamp{font-size:.75rem;color:#bbb;margin-left:6px}
+  .user{color:#00e5ff}
+  .bot{color:#ffcc00}
+  .input-area{display:flex;padding:10px;background:rgba(0,0,0,.6)}
+  .input-area input{flex:1;padding:8px;border-radius:6px;border:none;margin-right:10px;background:#1f1f1f;color:#fff}
+  .input-area button{background:#00e5ff;border:none;padding:8px 12px;border-radius:6px;cursor:pointer}
+  .fa-microphone{font-size:1.5rem;margin-left:10px;cursor:pointer}
+  .listening{animation:pulse 1s infinite;color:#00e5ff}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(0,229,255,.7)}70%{box-shadow:0 0 0 20px rgba(0,229,255,0)}100%{box-shadow:0 0 0 0 rgba(0,229,255,0)}}
+
+  /* ====== Glass Search Popup ====== */
+  .overlay{
+    position:fixed;inset:0;
+    background:rgba(10,10,10,.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display:none;
+    align-items:flex-start;
+    justify-content:center;
+    padding-top:8vh;
+    z-index:999;
+    animation:fadeIn .18s ease-out;
+  }
+  .overlay.show{display:flex}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+  .search-modal{
+    width:min(820px,92vw);
+    max-height:78vh;
+    display:flex;flex-direction:column;
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.14);
+    box-shadow:0 20px 60px rgba(0,0,0,.6);
+    border-radius:16px;
+    overflow:hidden;
+    transform:scale(.98);
+    animation:pop .18s ease-out forwards;
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+  @keyframes pop{to{transform:scale(1)}}
+
+  .search-head{
+    display:flex;align-items:center;gap:10px;
+    padding:12px 14px;
+    background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,0));
+    border-bottom:1px solid rgba(255,255,255,.12);
+  }
+  .search-icon{opacity:.8}
+  .search-input{
+    flex:1;background:transparent;border:none;outline:none;color:#fff;
+    font-size:1rem;letter-spacing:.2px;
+  }
+  .kbd{font-size:.72rem;padding:4px 6px;border-radius:6px;border:1px solid rgba(255,255,255,.2);opacity:.8}
+  .close-x{background:transparent;border:none;color:#fff;font-size:1.2rem;cursor:pointer;opacity:.8}
+
+  .results{
+    overflow:auto;min-height:260px;max-height:58vh;padding:6px 8px 12px;
+  }
+  .group{padding:10px 12px}
+  .group h5{margin:6px 0 8px;font-size:.74rem;color:#c9d1d9;text-transform:uppercase;letter-spacing:.08em;opacity:.85}
+  .row{
+    display:flex;align-items:center;gap:10px;
+    padding:10px;border-radius:10px;cursor:pointer;
+  }
+  .row:hover{background:rgba(255,255,255,.08)}
+  .row .title{font-weight:600}
+  .row .snippet{font-size:.86rem;opacity:.85}
+  .row .dot{width:8px;height:8px;border-radius:50%;background:#4ade80;margin-right:6px;opacity:.9}
+  .row .time{margin-left:auto;font-size:.72rem;opacity:.7}
+
+  .foot{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:10px 14px;border-top:1px solid rgba(255,255,255,.1);
+    font-size:.8rem;opacity:.85
+  }
+  .hint{opacity:.7}
+  .kbd-inline{padding:2px 6px;border:1px solid rgba(255,255,255,.25);border-radius:6px;margin-left:6px;font-size:.72rem}
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar hidden" id="sidebar">
+  <h2>Jarvis</h2>
+  <button id="newChat">+ New Chat</button>
+  <!-- NEW: open popup button -->
+  <button id="openSearch">Search chats (Ctrl+K)</button>
+  <input type="text" id="searchChat" placeholder="Filter titles here (optional)">
+  <div class="chat-history" id="chatHistory"></div>
+</div>
+
+<!-- Main -->
+<div class="main" id="main">
+  <video src="images/friday.mp4" autoplay loop muted></video>
+  <div class="header">
+    <button id="toggleSidebar">☰</button>
+    <p>Jarvis</p>
+    <a class="insta" href="https://www.instagram.com/iamfaizan_7_" target="_blank">Instagram</a>
+  </div>
+
+  <div class="chat-box" id="chatBox"></div>
+
+  <div class="input-area">
+    <input type="text" id="userInput" placeholder="Type a message...">
+    <button id="sendBtn">Send</button>
+    <i id="micBtn" class="fa-solid fa-microphone"></i>
+  </div>
+</div>
+
+<!-- ====== Glass Search Popup ====== -->
+<div id="searchOverlay" class="overlay" aria-hidden="true">
+  <div class="search-modal" role="dialog" aria-modal="true">
+    <div class="search-head">
+      <i class="fa-solid fa-magnifying-glass search-icon"></i>
+      <input id="popupSearchInput" class="search-input" placeholder="Search chats..." autocomplete="off"/>
+      <span class="kbd">Esc</span>
+      <button class="close-x" id="searchClose" aria-label="Close">&times;</button>
+    </div>
+
+    <div id="searchResults" class="results">
+      <!-- groups rendered by JS -->
+    </div>
+
+    <div class="foot">
+      <div class="hint">Click a chat to open it.</div>
+      <div>Open search <span class="kbd-inline">Ctrl</span> + <span class="kbd-inline">K</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ====== existing state ====== */
+const sidebar = document.getElementById('sidebar');
+const main = document.getElementById('main');
+const toggleBtn = document.getElementById('toggleSidebar');
+const chatBox = document.getElementById('chatBox');
+const userInput = document.getElementById('userInput');
+const sendBtn = document.getElementById('sendBtn');
+const micBtn = document.getElementById('micBtn');
+const newChatBtn = document.getElementById('newChat');
+const chatHistoryDiv = document.getElementById('chatHistory');
+const searchChat = document.getElementById('searchChat');
+
+let chats = JSON.parse(localStorage.getItem('jarvisChats') || '[]');
+let currentChatIndex = null;
+
+function saveChats(){ localStorage.setItem('jarvisChats', JSON.stringify(chats)); }
+
+function renderChat(){
+  chatBox.innerHTML = '';
+  if(currentChatIndex === null) return;
+  chats[currentChatIndex].messages.forEach(m => {
+    const div = document.createElement('div');
+    div.className = 'message ' + m.sender;
+    div.innerHTML = (m.sender === 'user' ? 'You: ' : 'Jarvis: ') + m.text +
+      `<span class="timestamp">${m.time}</span>`;
+    chatBox.appendChild(div);
+  });
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function renderHistory(){
+  chatHistoryDiv.innerHTML = '';
+  const filter = (searchChat.value||'').toLowerCase();
+  chats.forEach((c, i) => {
+    if(!filter || c.title.toLowerCase().includes(filter)){
+      const item = document.createElement('div');
+      item.className = 'chat-item';
+      item.textContent = c.title || `Chat ${i+1}`;
+      item.onclick = () => { currentChatIndex = i; renderChat(); if(window.innerWidth<=768) sidebar.classList.add('hidden'); };
+      chatHistoryDiv.appendChild(item);
+    }
+  });
+}
+
+/* ====== existing send flow (kept) ====== */
+sendBtn.onclick = sendMessage;
+userInput.onkeypress = e => { if(e.key === 'Enter') sendMessage(); };
+
+function getTime(){
+  const now = new Date();
+  return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+function ensureChatWithTitle(seed){
+  if(currentChatIndex!==null) return;
+  currentChatIndex = chats.length;
+  chats.push({ title: seed.length>20? seed.slice(0,20)+'...' : seed, messages: [] });
+}
+
+function sendMessage(){
+  const text = userInput.value.trim();
+  if(!text) return;
+  ensureChatWithTitle(text);
+  chats[currentChatIndex].messages.push({ sender: 'user', text, time: getTime() });
+  userInput.value = '';
+  renderChat();
+  saveChats();
+  // demo reply stub (your backends will fill this)
+  setTimeout(()=>{
+    const reply = '...';
+    chats[currentChatIndex].messages.push({ sender:'bot', text: reply, time: getTime() });
+    renderChat(); saveChats();
+  }, 300);
+}
+
+/* ====== voice ====== */
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+if(SpeechRecognition){
+  const recog = new SpeechRecognition();
+  recog.lang = 'en-US'; recog.interimResults=false;
+  micBtn.onclick = ()=> recog.start();
+  recog.onstart = ()=> micBtn.classList.add('listening');
+  recog.onend   = ()=> micBtn.classList.remove('listening');
+  recog.onresult = e => {
+    const transcript = e.results[0][0].transcript.trim();
+    userInput.value = transcript;
+    sendMessage();
+  };
+}else{
+  micBtn.style.display='none';
+}
+
+/* ====== sidebar toggle ====== */
+toggleBtn.onclick = (e) => {
+  if (window.innerWidth <= 768) {
+    e.stopPropagation();
+    sidebar.classList.toggle('hidden');
+  }
+};
+window.addEventListener('resize', () => {
+  if (window.innerWidth > 768) {
+    sidebar.classList.remove('hidden');
+  }
+});
+
+/* ====== Glass Search Popup ====== */
+const openSearchBtn = document.getElementById('openSearch');
+const overlay = document.getElementById('searchOverlay');
+const popupInput = document.getElementById('popupSearchInput');
+const closeSearchBtn = document.getElementById('searchClose');
+const results = document.getElementById('searchResults');
+
+function openSearch(){
+  overlay.classList.add('show');
+  overlay.setAttribute('aria-hidden','false');
+  popupInput.value = '';
+  renderSearchResults('');
+  setTimeout(()=> popupInput.focus(), 0);
+}
+function closeSearch(){
+  overlay.classList.remove('show');
+  overlay.setAttribute('aria-hidden','true');
+}
+openSearchBtn.addEventListener('click', openSearch);
+closeSearchBtn.addEventListener('click', closeSearch);
+overlay.addEventListener('click', (e)=>{ if(e.target===overlay) closeSearch(); });
+document.addEventListener('keydown', (e)=>{
+  if(e.key==='Escape') closeSearch();
+  if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='k'){
+    e.preventDefault(); openSearch();
+  }
+});
+popupInput.addEventListener('input', ()=> renderSearchResults(popupInput.value.trim().toLowerCase()));
+
+function formatDateLabel(d){
+  const now = new Date();
+  const dd = new Date(d);
+  const ms = now - dd;
+  const dayMs = 24*60*60*1000;
+  if(dd.toDateString()===now.toDateString()) return 'Today';
+  if(ms <= 30*dayMs) return 'Previous 30 Days';
+  return 'Older';
+}
+
+function renderSearchResults(q){
+  // Build flat list from chats
+  const rows = [];
+  chats.forEach((c, idx)=>{
+    // last updated: use last message time if available
+    const lastMsg = c.messages[c.messages.length-1];
+    const updated = lastMsg?.time || '';
+    const title = c.title || `Chat ${idx+1}`;
+    const snippet = lastMsg ? `${lastMsg.sender==='user'?'You':'Jarvis'}: ${lastMsg.text}` : 'No messages yet';
+    const group = formatDateLabel(new Date());
+    rows.push({idx, title, snippet, updated, group});
+  });
+
+  // Filter
+  const filtered = rows.filter(r=>{
+    if(!q) return true;
+    return r.title.toLowerCase().includes(q) || r.snippet.toLowerCase().includes(q);
+  });
+
+  // Group
+  const groups = ['Today','Previous 30 Days','Older'];
+  results.innerHTML = '';
+  groups.forEach(g=>{
+    const inGroup = filtered.filter(r=>r.group===g);
+    if(inGroup.length===0) return;
+    const wrap = document.createElement('div');
+    wrap.className='group';
+    wrap.innerHTML = `<h5>${g}</h5>`;
+    inGroup.forEach(r=>{
+      const row = document.createElement('div');
+      row.className='row';
+      row.innerHTML = `
+        <span class="dot"></span>
+        <div style="min-width:0">
+          <div class="title">${r.title}</div>
+          <div class="snippet">${r.snippet}</div>
+        </div>
+        <div class="time">${r.updated || ''}</div>
+      `;
+      row.onclick = ()=>{
+        currentChatIndex = r.idx;
+        renderChat();
+        renderHistory();
+        closeSearch();
+        if(window.innerWidth<=768) sidebar.classList.add('hidden');
+      };
+      wrap.appendChild(row);
+    });
+    results.appendChild(wrap);
+  });
+
+  if(filtered.length===0){
+    const empty = document.createElement('div');
+    empty.style.padding='18px';
+    empty.style.opacity='.8';
+    empty.textContent = 'No chats match your search.';
+    results.appendChild(empty);
+  }
+}
+
+/* ====== boot ====== */
+renderHistory();
+renderChat();
+</script>
+</body>
+</html>
