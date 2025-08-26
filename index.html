@@ -539,23 +539,24 @@ copyLink.addEventListener('click', ()=>{
 
   <div class="input-area">
   <div class="input-box">
-    <!-- Plus Button -->
+    <!-- Plus Button with Dropdown -->
     <div class="plus-menu">
       <button class="plus-btn"><i class="fa fa-plus"></i></button>
-      <div class="dropdown">
-        <button><i class="fa fa-image"></i> Create Image</button>
-        <button><i class="fa fa-file"></i> Upload File</button>
+      <div class="dropdown1">
+        <button id="createImage"><i class="fa fa-image"></i> Create Image</button>
+        <button id="uploadFile"><i class="fa fa-file"></i> Upload File</button>
       </div>
     </div>
 
     <!-- Text Input -->
     <input id="text" placeholder="Send a message..." />
 
-    <!-- Mic & Send -->
-    <button id="mic" class="mic"><i class="fa fa-microphone"></i></button>
-    <button id="send" class="send"><i class="fa fa-paper-plane"></i></button>
+    <!-- Action Buttons -->
+    <button id="mic" class="mic" title="Dictate"><i class="fa fa-microphone"></i></button>
+    <button id="send" class="send" style="display:block;"><i class="fa fa-paper-plane"></i></button>
   </div>
 </div>
+
 
 <style>
   
@@ -564,14 +565,15 @@ copyLink.addEventListener('click', ()=>{
   bottom: 0;
   left: 0;
   width: 100%;
-  background: rgba(0,0,0,.85);
+  background: rgba(0,0,0,.9);
   border-top: 1px solid var(--border);
-  padding: 12px 16px;
+  padding: 14px 20px;
   display: flex;
   justify-content: center;
   z-index: 5;
 }
 
+/* Curved input box */
 .input-box {
   flex: 1;
   max-width: 750px;
@@ -579,45 +581,90 @@ copyLink.addEventListener('click', ()=>{
   align-items: center;
   background: #1e1e20;
   border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 6px 10px;
+  border-radius: 999px; /* pill shape */
+  padding: 6px 12px;
   gap: 8px;
 }
 
+/* Text input */
 .input-box input {
   flex: 1;
   background: transparent;
   border: none;
   outline: none;
-  padding: 10px;
+  padding: 12px;
   color: var(--text);
   font-size: 1rem;
 }
 
+/* Buttons */
 .input-box button {
   background: transparent;
   border: none;
   color: var(--muted);
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   cursor: pointer;
-  padding: 6px;
-  border-radius: 8px;
-  transition: background 0.2s;
+  padding: 8px;
+  border-radius: 50%;
+  transition: background 0.2s, color 0.2s;
 }
 
 .input-box button:hover {
   background: rgba(255,255,255,.08);
+  color: #fff;
 }
 
 .input-box .send {
   color: var(--cy);
-  font-size: 1.3rem;
 }
 
 .input-box .mic {
   color: var(--pink);
 }
 
+/* Plus menu */
+.plus-menu {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.plus-btn {
+  font-size: 1.4rem;
+}
+
+.dropdown1 {
+  position: absolute;
+  bottom: 120%;
+  left: 0;
+  background: #1e1e20;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: none;
+  flex-direction: column;
+  min-width: 180px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  z-index: 10;
+}
+
+.dropdown1 button {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  padding: 12px 16px;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background 0.2s;
+}
+
+.dropdown1 button:hover {
+  background: rgba(255,255,255,0.1);
+}
 </style>
   </div>
 </main>
